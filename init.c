@@ -5,9 +5,17 @@
 #include <sys/types.h>
 #define max_pipe 256
 //int exec_cmd(char *args[128], int cnt);
-int exec_pipe(char *args[128], int total_cnt_pipe, int num_args[max_pipe]);
+int exec_pipe(char *args[128], int total_cnt_pipe, int curr_pipe, int num_args[max_pipe]);
 int exec_cmd(char *args[128]);
 
+int test(void){
+	char a[30] = "pwd";
+	char *b[3];
+	b[0] = a;
+	b[1] = NULL;
+	exec_cmd(b);
+	printf("flag!!!!!!\n");
+}
 
 int main() {
     while (1) {
@@ -53,7 +61,7 @@ int main() {
 
       //  printf("after %d\n", pipe_error_flag);
 
-      //pipe_error_flag = 0;
+      pipe_error_flag = 0;
 
         if(pipe_error_flag)
         	continue;
@@ -84,7 +92,10 @@ int main() {
         }
         args[i] = NULL;
 
+//        test();
+
         //printf("args %s total_cnt_pipe %d\n", args[0], total_cnt_pipe);
+			  
 
         if (total_cnt_pipe == 0)
         {
@@ -96,7 +107,12 @@ int main() {
         	}
         }
         else{
-        	if(exec_pipe(args, total_cnt_pipe, num_args) == 1){
+        	/*pid_t pid = fork();
+        	if (pid == 0)
+        	{
+			   	exec_pipe(args, total_cnt_pipe, num_args);
+        	}*/
+        	if(exec_pipe(args, total_cnt_pipe, total_cnt_pipe, num_args) == 1){
         		dup2(save_stdin,STDIN_FILENO);
         		dup2(save_stdout, STDOUT_FILENO);
         		continue;
@@ -105,6 +121,12 @@ int main() {
         		printf("fail to run the command\n");
         		continue;
         	}
+        	/*else{
+        		wait(NULL);
+        		dup2(save_stdin,STDIN_FILENO);
+        		dup2(save_stdout, STDOUT_FILENO);
+        		continue;
+        	}*/
         }
     }
 }
@@ -144,19 +166,15 @@ int exec_cmd(char *args[128]){
             return 255;
         }
         /* 父进程 */
-        wait(NULL);
+        else
+        	wait(NULL);
 	return 1;
 }
 
-int exec_pipe(char *args[128], int total_cnt_pipe, int num_args[max_pipe]){
+int exec_pipe(char *args[128], int total_cnt_pipe, int curr_pipe, int num_args[max_pipe]){
 
-	if(total_cnt_pipe == 0)
+	if(curr_pipe == 0)
 		execlp(args[num_args[0] + 1], args[num_args[0] + 1], NULL);
-
-	int save_stdin, save_stdout;
-	save_stdin = dup(STDIN_FILENO);
-    save_stdout = dup(STDOUT_FILENO);
-    //save stdin stdout
 
 	int filedes[2];
 	
@@ -166,20 +184,16 @@ int exec_pipe(char *args[128], int total_cnt_pipe, int num_args[max_pipe]){
  		dup2(filedes[1], STDOUT_FILENO);
 	 	close(filedes[1]);
 	 	close(filedes[0]);
-	 	exec_pipe(args, total_cnt_pipe - 1, num_args);
+	 	exec_pipe(args, total_cnt_pipe, curr_pipe - 1, num_args);
 	 	}
 	else{
  		wait(NULL);
-
- 		dup2(save_stdin,STDIN_FILENO);
-       	dup2(save_stdout, STDOUT_FILENO);
-
  		dup2(filedes[0], STDIN_FILENO);
  		close(filedes[0]);
  		close(filedes[1]);
  		char *temp[128];
 
- 		temp[0] = args[num_args[total_cnt_pipe] + 1];
+ 		temp[0] = args[num_args[curr_pipe] + 1];
  		int i;
  		for (i = 0; *temp[i] != '|' && *temp[i]; i++){
            	for (temp[i+1] = temp[i] + 1; *temp[i+1]; temp[i+1]++){
@@ -190,6 +204,15 @@ int exec_pipe(char *args[128], int total_cnt_pipe, int num_args[max_pipe]){
             }
         }
         temp[i] = NULL;
-	 	exec_cmd(temp);
+        if (curr_pipe == total_cnt_pipe)
+        {
+        	exec_cmd(temp);
+        }
+        else{
+        	exec_cmd(temp);
+        	_exit(0);
+        }
 	}
+	return 1;
 }
+
