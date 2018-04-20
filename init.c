@@ -3,6 +3,7 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <stdlib.h>
 #define max_pipe 256
 //int exec_cmd(char *args[128], int cnt);
 int exec_pipe(char *args[128], int total_cnt_pipe, int curr_pipe, int num_args[max_pipe]);
@@ -82,7 +83,7 @@ int main() {
             	num_args[total_cnt_pipe] = i;
             }
             for (args[i+1] = args[i] + 1; *args[i+1]; args[i+1]++){
-                if (*args[i+1] == ' ') {
+                if (*args[i+1] == ' ' || *args[i+1] == '=') {
                     *args[i+1] = '\0';
                     args[i+1]++;
                     break;
@@ -154,6 +155,12 @@ int exec_cmd(char *args[128]){
         if (strcmp(args[0], "exit") == 0)
             return 0;
 
+        if (strcmp(args[0], "export") == 0) {
+			if(args[1])
+				setenv(args[1],args[2],1);
+			return 1;
+		}
+
        // printf("lalalalala\n");
 
       //  args[1] = NULL;
@@ -194,9 +201,11 @@ int exec_pipe(char *args[128], int total_cnt_pipe, int curr_pipe, int num_args[m
  		char *temp[128];
 
  		temp[0] = args[num_args[curr_pipe] + 1];
+ 		//printf("%s\n",temp[0]);
+ 		//printf("%s\n", temp[0] + 5);
  		int i;
- 		for (i = 0; *temp[i] != '|' && *temp[i]; i++){
-           	for (temp[i+1] = temp[i] + 1; *temp[i+1]; temp[i+1]++){
+ 		for (i = 0; *temp[i] != '|' && args[num_args[curr_pipe] + 1 + i] != NULL; i++){
+           	for (temp[i+1] = temp[i] + 1; temp[i+1] != NULL; temp[i+1]++){
                	if (*temp[i+1] == '\0') {
                 	temp[i+1]++;
                    	break;
