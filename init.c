@@ -97,7 +97,12 @@ int main() {
 
         //printf("args %s total_cnt_pipe %d\n", args[0], total_cnt_pipe);
 			  
-
+        for (int i = 0; args[i] != NULL; ++i)
+        {
+        	if (strcmp(args[i], "exit") == 0)
+            return 0;
+        }
+        
         if (total_cnt_pipe == 0)
         {
         	if(exec_cmd(args) == 1)
